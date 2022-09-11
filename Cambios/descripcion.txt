@@ -1,0 +1,1 @@
+Carpeta creada para almacenar las capturas de pantalla de los resultados obtenidos al cambiar el código network.py
