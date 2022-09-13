@@ -41,7 +41,8 @@ class Network(object):
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
-            a = sigmoid(np.dot(w, a)+b)
+            # a = sigmoid(np.dot(w, a)+b)
+            a = softmax(np.dot(w, a) + b) # Implementamos softmax en el feedforward
         return a
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
@@ -104,11 +105,14 @@ class Network(object):
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, activation)+b
             zs.append(z)
-            activation = sigmoid(z)
+            # activation = sigmoid(z)
+            activation = softmax(z) # Implementando softmax
             activations.append(activation)
         # backward pass
+        #delta = self.cost_derivative(activations[-1], y) * \
+        #   sigmoid_prime(zs[-1])
         delta = self.cost_derivative(activations[-1], y) * \
-            sigmoid_prime(zs[-1])
+            softmax(zs[-1])  # implementación de softmax
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         # Note that the variable l in the loop below is used a little
@@ -119,7 +123,8 @@ class Network(object):
         # that Python can use negative indices in lists.
         for l in range(2, self.num_layers):
             z = zs[-l]
-            sp = sigmoid_prime(z)
+            #sp = sigmoid_prime(z)
+            sp = softmax(z) # Implementación de softmax
             delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
@@ -137,18 +142,15 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial C_x /
         \partial a for the output activations."""
-        return (output_activations-y)
+        return output_activations[-1] * (output_activations-y) # log likelihood
 
     def SGDP(self, training_data, epochs, mini_batch_size, eta, gamma,
             test_data=None):
-        """Train the neural network using mini-batch stochastic
-        gradient descent.  The ``training_data`` is a list of tuples
-        ``(x, y)`` representing the training inputs and the desired
-        outputs.  The other non-optional parameters are
-        self-explanatory.  If ``test_data`` is provided then the
-        network will be evaluated against the test data after each 
-        epoch, and partial progress printed out.  This is useful for
-        tracking progress, but slows things down substantially."""
+        """Esta es la versión del optimizador SGD con momento o SGDP
+            la implementación consiste en añadir una fracción gamma del 
+            vector de actualización del paso anterior al actual.
+            Los cambios se ven al añadir el parámetro gamma en la definición
+            así como de añadirlo a la función update_mini_batch"""
 
         training_data = list(training_data)
         n = len(training_data)
@@ -163,24 +165,23 @@ class Network(object):
                 training_data[k:k+mini_batch_size]
                 for k in range(0, n, mini_batch_size)]
             for mini_batch in mini_batches:
-                self.update_mini_batch_SGDP(mini_batch, eta,gamma)
+                self.update_mini_batch_SGDP(mini_batch, eta,gamma) # Aquí se añade gamma
             if test_data:
                 print("Epoch {} : {} / {}".format(j,self.evaluate(test_data),n_test))
             else:
                 print("Epoch {} complete".format(j))
 
     def update_mini_batch_SGDP(self, mini_batch, eta, gamma):
-        """Update the network's weights and biases by applying
-        gradient descent using backpropagation to a single mini batch.
-        The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
-        is the learning rate."""
+        """Esta es la versión de la actualización del mini batch que acompaña
+            a el SGDP, los cambios están en que la fracción gamma se añade en la 
+            definición de la función así como en self.weigths"""
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         for x, y in mini_batch:
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [w-(eta/len(mini_batch))*nw - gamma*w
+        self.weights = [w-(eta/len(mini_batch))*nw - gamma*w # Aquí entra el término de la definición de SGDP
                         for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b-(eta/len(mini_batch))*nb
                        for b, nb in zip(self.biases, nabla_b)]
@@ -194,3 +195,12 @@ def sigmoid_prime(z):
     """Derivative of the sigmoid function."""
     return sigmoid(z)*(1-sigmoid(z))
 
+# Softmax
+
+def softmax(z):
+    """Función de activación softmax"""
+    e = np.exp(z - z.max())
+    return e / np.sum(e)
+
+# No me queda claro cómo obtener la derivada de softmax, o si debo incluirla
+# tal vez por eso la red no está aprendiendo.
