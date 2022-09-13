@@ -10,7 +10,7 @@ test_data = list(test_data)
 
 net = network.Network([784,30,10])
 
-net.SGDP( training_data, 30, 10, 3.0, 0.0001, test_data=test_data)
+net.SGD( training_data, 30, 10, 3.0, test_data=test_data)
 
 archivo = open("red_prueba1.pkl",'wb')
 
