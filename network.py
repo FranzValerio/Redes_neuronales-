@@ -41,8 +41,8 @@ class Network(object):
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
-            # a = sigmoid(np.dot(w, a)+b)
-            a = softmax(np.dot(w, a) + b) # Implementamos softmax en el feedforward
+            a = sigmoid(np.dot(w, a)+b)
+            #a = softmax(np.dot(w, a) + b) # Implementamos softmax en el feedforward
         return a
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
@@ -105,14 +105,14 @@ class Network(object):
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, activation)+b
             zs.append(z)
-            # activation = sigmoid(z)
-            activation = softmax(z) # Implementando softmax
+            activation = sigmoid(z)
+            #activation = softmax(z) # Implementando softmax
             activations.append(activation)
         # backward pass
-        #delta = self.cost_derivative(activations[-1], y) * \
-        #   sigmoid_prime(zs[-1])
         delta = self.cost_derivative(activations[-1], y) * \
-            softmax(zs[-1])  # implementación de softmax
+           sigmoid_prime(zs[-1])
+        #delta = self.cost_derivative(activations[-1], y) * \
+            #softmax(zs[-1])  # implementación de softmax
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         # Note that the variable l in the loop below is used a little
@@ -123,8 +123,8 @@ class Network(object):
         # that Python can use negative indices in lists.
         for l in range(2, self.num_layers):
             z = zs[-l]
-            #sp = sigmoid_prime(z)
-            sp = softmax(z) # Implementación de softmax
+            sp = sigmoid_prime(z)
+            #sp = softmax(z) # Implementación de softmax
             delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
@@ -142,7 +142,8 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial C_x /
         \partial a for the output activations."""
-        return output_activations[-1] * (output_activations-y) # log likelihood
+        return (output_activations-y)
+        #return output_activations[-1] * (output_activations-y) # log likelihood
 
     def SGDP(self, training_data, epochs, mini_batch_size, eta, gamma,
             test_data=None):
